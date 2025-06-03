@@ -1,0 +1,11 @@
+#titleTable{
+    margin-top: 30px;
+}
+
+.TableCourses{
+    width: 90%;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;    
+}

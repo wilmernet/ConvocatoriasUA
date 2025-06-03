@@ -1,0 +1,37 @@
+.callForm{
+    padding: 15px;
+    width: 99%;
+}
+
+#intervalDate{
+    margin-top: 30px;
+    display: flex;
+    justify-content:left;  
+    align-items: end;  
+}
+
+.dateInscription{
+    margin-right: 30px;
+}
+
+#dateTest{
+    width: 30%;
+}
+
+#infoTest{
+    display: flex;
+    justify-content:left;  
+    width: 81%;
+    align-items: end;
+}
+
+.PanelTest2{
+    padding-bottom: 0px;
+} 
+
+.Superior{    
+    background-color: #FFFFFF;
+    top: 0px;
+    position: sticky;
+    z-index: 5;
+}
