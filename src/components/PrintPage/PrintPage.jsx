@@ -3,26 +3,18 @@ import db from "../../Firebase/FirebaseConfig";
 import { collection, query, where, doc, getDoc } from "firebase/firestore";
 import { Document, Page, StyleSheet, View, Text, Image } from '@react-pdf/renderer'
 import LogoUA from "../../assets/UA.png";
+import checkFilled from '../../assets/icons8-checkbox-50_OK.png';
+import checkEmpty from '../../assets/icons8-checkbox-50.png';
+
 //----------------------
 
-import { format } from "dayjs";
 import { useEffect, useState } from 'react';
-import printLogoUA from "../../assets/UA.png";
 import dayjs from 'dayjs';
-// import 'dayjs/locale/es.js';
-
-import Divider from '@mui/material/Divider';
-// import { display } from "html2canvas/dist/types/css/property-descriptors/display";
 
 dayjs.locale('es');
 
 
 const PrintPage = ({ convocatoria }) => {
-
-
-    // const [pageNumbers, setPageNumbers] = useState(1);
-    // const [totalPageNumbers, setTotalPageNumbers] = useState();
-
     const [data, setData] = useState({})
     const [isLoading, setIsLoading] = useState(true);
     const [fecha, setFecha] = useState(null);
@@ -37,6 +29,7 @@ const PrintPage = ({ convocatoria }) => {
     const [programaMayuscula, setProgramaMayuscula] = useState("");
     const [areaMayuscula, setAreaMayuscula] = useState("");
     const [vinculacionMayuscula, setVinculacionMayuscula] = useState("");
+    const [textoConEspacios, setTextoConEspacios] = useState("");    
 
     function formatearFecha(date) {
         const dia = date.getDate().toString().padStart(2, '0');
@@ -46,9 +39,8 @@ const PrintPage = ({ convocatoria }) => {
     }
 
     function formatearHora(date) {
-        let hora = date.getHours().toString().padStart(2, '0');
-        const minutos = date.getMinutes().toString().padStart(2, '0');
-        return (hora < 12) ? `${hora}:${minutos} AM` : `${hora - 12}:${minutos} PM`;
+        const hora = date.getHours();
+        return (hora > 12 ? hora - 12 : hora) + ":" + date.getMinutes().toString().padStart(2, '0') + ((hora < 12) ? ` AM` : ` PM`);
     }
 
     useEffect(() => {
@@ -56,13 +48,17 @@ const PrintPage = ({ convocatoria }) => {
             const docRef = doc(db, "convocatorias", convocatoria);
             const docSnap = await getDoc(docRef);
             if (docSnap.exists() && docSnap.data()) {
-                setData({ ...docSnap.data() });
+                setData({ ...docSnap.data() });                
                 setAreaMayuscula((docSnap.data().area).toUpperCase());
                 setFacultadMayuscula((docSnap.data().facultad).toUpperCase());
                 setProgramaMayuscula((docSnap.data().programa).toUpperCase());
                 setVinculacionMayuscula((docSnap.data().vinculacion).toUpperCase());
                 setCursos(docSnap.data().cursos);
 
+                const textoOriginal = docSnap.data().requisitos;
+                // Reemplaza todos los espacios con el carácter de espacio no rompible
+                const textoFormateado = textoOriginal.replace(/ /g, "\u00A0");
+                setTextoConEspacios(textoFormateado);
 
                 const fecha_convocatoria = new Date(docSnap.data().fecha.seconds * 1000);
                 setFecha(formatearFecha(fecha_convocatoria));
@@ -97,7 +93,7 @@ const PrintPage = ({ convocatoria }) => {
             paddingTop: 80,
             paddingBottom: 40,
             paddingHorizontal: 40,
-            color: '#666666',
+            color: '#000',
             fontWeight: 'bold',
         },
         header: {
@@ -120,46 +116,42 @@ const PrintPage = ({ convocatoria }) => {
         headerRight: {
             textAlign: 'right',
         },
+        title: {     
+            fontSize: 11,
+            fontWeight: 'bold',
+            marginTop: "10px",
+            marginBottom: "3px",
+            color: '#000',
+        },
         content: {
             marginTop: 1,
-            fontSize: 12,
+            fontSize: 10,
+            color: '#000',
             textAlign: 'justify'
         },
         // Tabla
         table: {
             display: 'table',
             width: 'auto',
-            marginVertical: 10,
-            // borderWidth: 1,
             borderColor: '#000'
         },
         tableRow: {
             flexDirection: 'row'
         },
         tableColCourse: {
-            // borderStyle: 'solid',
-            // borderColor: '#000',
-            // borderWidth: 1,
             padding: 4,
-            flex: 2
+            flex: 3
         },
         tableCol: {
-            // borderStyle: 'solid',
-            // borderColor: '#000',
-            // borderWidth: 1,
             padding: 4,
-            flex: 1
+            flex: 1.2
+        },
+        tableCol1: {
+            padding: 4,
+            flex: 0.9
         },
         tableHeader: {
             fontWeight: 'bold',
-            backgroundColor: '#eee'
-        },
-        title: {
-            fontSize: "4mm",        
-            fontWeight: 'bold',
-            marginTop: "10px",
-            marginBottom: "3px",
-            color: '#000',
         },
     });
 
@@ -170,32 +162,29 @@ const PrintPage = ({ convocatoria }) => {
                     {/* Encabezado con numeración */}
                     <View style={{ ...styles.header, borderStyle: "solid", borderWidth: 1, borderColor: "#000", display: "flex", flexDirection: "row" }} fixed>
 
-                        <View style={{ borderRightStyle: "solid", borderRightWidth: 1, borderRightColor: "#000", display: "flex", width: "20%", height: "50px", justifyContent:"center", alignItems:"center" }}>
-                            <Image src={LogoUA} alt="" style={{ height: "38px", width: "40px"}} />                                                        
+                        <View style={{ borderRightStyle: "solid", borderRightWidth: 1, borderRightColor: "#000", display: "flex", width: "20%", height: "50px", justifyContent: "center", alignItems: "center" }}>
+                            <Image src={LogoUA} alt="" style={{ height: "38px", width: "40px" }} />
                             <Text style={{ fontSize: "5px", textAlign: "center" }}>UNIVERSIDAD DE LA</Text>
                             <Text style={{ fontSize: "5px", textAlign: "center" }}>AMAZONIA</Text>
                         </View>
                         <View style={{ width: "80%", display: "flex", flexDirection: "column", height: "50px" }}>
-                            {/* <View style={{ borderBottomStyle: "solid", borderBottomWidth: 1, borderBottomColor: "#000", width: "100%", height: "50%", display: "flex", alignContent: "center" }}> */}
-                            <View style={{ borderBottomStyle: "solid", borderBottomWidth: 1, borderBottomColor: "#000", width: "100%", height: "50%", display: "flex", alignContent: "center", justifyContent: "center"}}>
-                                {/* <Text style={{ fontSize: "2px", textAlign: "center" }}> </Text> */}
+                            <View style={{ borderBottomStyle: "solid", borderBottomWidth: 1, borderBottomColor: "#000", width: "100%", height: "50%", display: "flex", alignContent: "center", justifyContent: "center" }}>
                                 <Text style={{ fontSize: "9px", textAlign: "center" }}>FORMATO CONVOCATORIA CONCURSO MÉRITO DOCENTE</Text>
-                                {/* <Text style={{ fontSize: "2px", textAlign: "center" }}> </Text> */}
                             </View>
                             <View style={{ width: "100%", height: "50%", display: "flex", flexDirection: "row" }}>
-                                <View style={{ borderRightStyle: "solid", borderRightWidth: 1, borderRightColor: "#000", width: "25%", height: "100%", display: "flex", alignContent: "center", justifyContent: "center"}}>
+                                <View style={{ borderRightStyle: "solid", borderRightWidth: 1, borderRightColor: "#000", width: "25%", height: "100%", display: "flex", alignContent: "center", justifyContent: "center" }}>
                                     <Text style={{ fontSize: "8px", fontWeight: "bold", textAlign: "center" }}>CÓDIGO:</Text>
                                     <Text style={{ fontSize: "8px", textAlign: "center" }}>FO-M-DC-18-01</Text>
                                 </View>
-                                <View style={{ borderRightStyle: "solid", borderRightWidth: 1, borderRightColor: "#000", width: "25%", height: "100%", display: "flex", alignContent: "center", justifyContent: "center"}}>
+                                <View style={{ borderRightStyle: "solid", borderRightWidth: 1, borderRightColor: "#000", width: "25%", height: "100%", display: "flex", alignContent: "center", justifyContent: "center" }}>
                                     <Text style={{ fontSize: "8px", fontWeight: "bold", textAlign: "center" }}>VERSIÓN:</Text>
                                     <Text style={{ fontSize: "8px", textAlign: "center" }}>2</Text>
                                 </View>
-                                <View style={{ borderRightStyle: "solid", borderRightWidth: 1, borderRightColor: "#000", width: "25%", height: "100%", display: "flex", alignContent: "center", justifyContent: "center"}}>
+                                <View style={{ borderRightStyle: "solid", borderRightWidth: 1, borderRightColor: "#000", width: "25%", height: "100%", display: "flex", alignContent: "center", justifyContent: "center" }}>
                                     <Text style={{ fontSize: "8px", fontWeight: "bold", textAlign: "center" }}>FECHA:</Text>
                                     <Text style={{ fontSize: "8px", textAlign: "center" }}>2021-09-16</Text>
                                 </View>
-                                <View style={{ width: "25%", height: "100%", display: "flex", alignContent: "center", justifyContent: "center"}}>
+                                <View style={{ width: "25%", height: "100%", display: "flex", alignContent: "center", justifyContent: "center" }}>
                                     <Text style={{ fontSize: "8px", fontWeight: "bold", textAlign: "center" }}>PÁGINA:</Text>
                                     <Text
                                         style={{ ...styles.headerRight, fontSize: "8px", fontWeight: "bold", textAlign: "center" }}
@@ -203,7 +192,6 @@ const PrintPage = ({ convocatoria }) => {
                                             `${pageNumber} de ${totalPages}`
                                         }
                                     />
-
                                 </View>
                             </View>
                         </View>
@@ -212,38 +200,33 @@ const PrintPage = ({ convocatoria }) => {
                     {/* Contenido */}
                     <View style={styles.content}>
                         <View style={{ display: "flex", fontWeight: 'bold', flexDirection: "column", textAlign: "center", marginBottom: 0 }}>
-                            <Text style={{ fontSize: "5.55mm", color:"#000" }}>CONVOCATORIA No.{data.numero}</Text>
-                            <Text style={{ margin: "0px 0px 15px 0px", color:"#000" }}>( {fecha} )</Text>
+                            <Text style={{ fontSize: "4.55mm", color: "#000", fontWeight: 'bold' }}>CONVOCATORIA No.{data.numero}</Text>
+                            <Text style={{ margin: "0px 0px 15px 0px", color: "#000" }}>( {fecha} )</Text>
                         </View>
                         <View >
                             <Text style={{ marginBottom: "10px", textAlign: "justify", display: "flex" }}>
-                                LA FACULTAD DE <Text style={{ textDecoration: "underline", fontWeight: "bold", color:"#000" }}>{facultadMayuscula}</Text> CONVOCA A CONCURSO PÚBLICO ABIERTO Y DE MÉRITOS PARA VINCULAR A UN DOCENTE
-                                <Text style={{ textDecoration: "underline", fontWeight: "bold", color:"#000" }}> {vinculacionMayuscula} </Text>
+                                LA FACULTAD DE <Text style={{ textDecoration: "underline", fontWeight: "bold", color: "#000" }}>{facultadMayuscula}</Text> CONVOCA A CONCURSO PÚBLICO ABIERTO Y DE MÉRITOS PARA VINCULAR A UN DOCENTE
+                                <Text style={{ textDecoration: "underline", fontWeight: "bold", color: "#000" }}> {vinculacionMayuscula} </Text>
                                 EN EL PROGRAMA DE
-                                <Text style={{ textDecoration: "underline", fontWeight: "bold", color:"#000" }}> {programaMayuscula} </Text>
-                                EN EL AREA DE <Text style={{ textDecoration: "underline", fontWeight: "bold", color:"#000" }}> {areaMayuscula} </Text>
+                                <Text style={{ textDecoration: "underline", fontWeight: "bold", color: "#000" }}> {programaMayuscula} </Text>
+                                EN EL AREA DE <Text style={{ textDecoration: "underline", fontWeight: "bold", color: "#000" }}> {areaMayuscula} </Text>
                                 PARA ORIENTAR:
                             </Text>
                             <View style={{ display: "flex", flexDirection: "column" }}>
                                 <View style={{ borderStyle: "solid", borderWidth: 1 }}>
-
-                                    <Text style={{ borderStyle: "solid", borderWidth: 1, borderColor: "#000", display: "flex", flexDirection: "row", backgroundColor: "rgb(206, 206, 206)", textAlign: "center", color:"#000" }}>ÁREA DE DESEMPEÑO</Text>
+                                    <Text style={{ borderStyle: "solid", borderWidth: 1, borderColor: "#000", display: "flex", flexDirection: "row", backgroundColor: "rgb(206, 206, 206)", textAlign: "center", color: "#000", padding: "2px" }}>ÁREA DE DESEMPEÑO</Text>
                                     <View style={styles.table}>
-
-                                        <View style={{...styles.tableRow, color:"#000"}}>
-                                            <Text style={[styles.tableColCourse, styles.tableHeader]}>Descripción</Text>
-                                            <Text style={[styles.tableCol, styles.tableHeader]}>Intensidad horaria</Text>
+                                        <View style={{ ...styles.tableRow, margin: "2px", color: "#000", borderBottom: "solid", borderBottomWidth: 0.5, borderBottomColor: "#000" }}>
+                                            <Text style={{ ...styles.tableColCourse }}>Descripción</Text>
+                                            <Text style={[styles.tableCol1, styles.tableHeader]}>Intensidad horaria</Text>
                                             <Text style={[styles.tableCol, styles.tableHeader]}>Lugar</Text>
                                         </View>
-
-
                                         {
-
                                             cursos.map((item) => (
                                                 <View key={item.id} style={styles.tableRow}>
                                                     <Text style={{ ...styles.tableColCourse, padding: "5px" }}>{item.nombre} [{item.id}]</Text>
-                                                    <Text style={{ ...styles.tableCol, textAlign: "center" }}>{item.intensidad}</Text>
-                                                    <Text style={styles.tableCol}>Florencia</Text>
+                                                    <Text style={{ ...styles.tableCol1, textAlign: "center" }}>{item.intensidad}</Text>
+                                                    <Text style={styles.tableCol}>{item.ciudad}</Text>
                                                 </View>
                                             ))
                                         }
@@ -253,12 +236,33 @@ const PrintPage = ({ convocatoria }) => {
                             </View>
 
                             <View Style={{ textAlign: "justify", display: "flex", flexDirection: "row" }}>
-                                <Text>
-                                    <Text style={{ fontWeight: "bold", textDecoration: "underline", color:"#000" }}>
+                                <Text style={{marginTop: "5px"}}>
+                                    <Text style={{ fontWeight: "bold", textDecoration: "underline", color: "#000" }}>
                                         {data.complementaria != '' ? "Labor complementaria: " : ""}
                                     </Text>
                                     {data.complementaria != '' ? "  " + data.complementaria : ""}
                                 </Text>
+                            </View>
+                            <View>
+                                <div style={{ display: "flex", flexDirection: "row", alignItems: "center", marginTop: "10px" }}>
+                                    <Text>
+                                        Convocatoria:      Primera vez 
+                                    </Text>
+                                    {data.primera_vez == "true" ? (
+                                        <Image src={checkFilled} alt="" style={{marginLeft:"5px", height: "15px", width: "15px" }} />
+                                    ) : (
+                                        <Image src={checkEmpty} alt="" style={{marginLeft:"5px", height: "15px", width: "15px" }} />
+                                    )}
+                                    <Text style={{ marginLeft: "20px" }}>
+                                        Segunda vez 
+                                    </Text>
+                                    {data.primera_vez == "true" ? (
+                                        <Image src={checkEmpty} alt="" style={{marginLeft:"5px", height: "15px", width: "15px" }}></Image>
+                                    ) : (
+                                        <Image src={checkFilled} alt="" style={{marginLeft:"5px", height: "15px", width: "15px" }}></Image>
+                                    )}
+
+                                </div>
                             </View>
 
                             <View style={{ margin: "5px 0px" }}>
@@ -291,42 +295,43 @@ const PrintPage = ({ convocatoria }) => {
                                 </View>
                             </View>
                             <View>
-                                <Text style={{...styles.title, fontSize: "4mm", fontWeight: "bold" }}>EXPERIENCIA MÍNIMA REQUERIDA (o su equivalente según la normatividad interna vigente)</Text>
+                                <Text style={{ ...styles.title, fontSize: "4mm", fontWeight: "bold" }}>EXPERIENCIA MÍNIMA REQUERIDA (o su equivalente según la normatividad interna vigente)</Text>
                                 <View style={{ display: "flex", justifyContent: "space-between", flexDirection: "column" }}>
                                     <View style={{ display: "flex", flexDirection: "row" }}>
                                         <Text style={{ fontWeight: "bold", marginLeft: "20px" }}>• Docencia Universitaria: {data.expe_docencia}</Text>
                                         <Text style={{ fontWeight: "bold", marginLeft: "20px" }} >• Profesional: {'\t\t'}{data.expe_profesional}</Text>
                                     </View>
                                     <View>
-                                        <Text style={{ fontWeight: "bold", marginLeft: "20px" }}>• Investigación: {data.expe_investigacion}</Text>
+                                        <Text style={{ fontWeight: "bold", marginLeft: "20px", marginTop: "5px" }}>• Investigación: {data.expe_investigacion}</Text>
                                     </View>
                                 </View>
                             </View>
                             <View>
-                                <Text style={{...styles.title, fontSize: "4mm", fontWeight: "bold" }}>
+                                <Text style={{ ...styles.title, fontSize: "4mm", fontWeight: "bold" }}>
                                     COMPETENCIAS REQUERIDAS
                                 </Text>
                                 <View style={{ paddingLeft: "20px", textAlign: "justify" }}>
-                                    <Text style={{ fontWeight: "bold", color:"#000" }}>• Personales:</Text>
+                                    <Text style={{ fontWeight: "bold", color: "#000" }}>• Personales:</Text>
                                     <Text style={{ textAlign: "justify", margin: "8px 0px" }}>
                                         {data.comp_personales}
                                     </Text>
-                                    <Text style={{ fontWeight: "bold" , color:"#000"}}>• Comportamentales:</Text>
+                                    <Text style={{ fontWeight: "bold", color: "#000" }}>• Comportamentales:</Text>
                                     <Text style={{ textAlign: "justify", margin: "8px 0px" }}>
                                         {data.comp_comportamentales}
                                     </Text>
-                                    <Text style={{ fontWeight: "bold", color:"#000" }}>• Técnicas:</Text>
+                                    <Text style={{ fontWeight: "bold", color: "#000" }}>• Técnicas:</Text>
                                     <Text style={{ textAlign: "justify", margin: "8px 0px" }}>
                                         {data.comp_tecnicas}
                                     </Text>
                                 </View>
                             </View>
                             <View>
-                                <Text style={{...styles.title, fontSize: "4mm", fontWeight: "bold" }}>
+                                <Text style={{ ...styles.title, fontSize: "4mm", fontWeight: "bold" }}>
                                     REQUISITOS MÍNIMOS PARA INSCRIPCIÓN
                                 </Text>
-                                <Text style={{ textAlign: "justify"}}>
-                                    {data.requisitos}
+                                <Text style={{ textAlign: "justify" }}>
+                                    {/* {data.requisitos} */}
+                                    {textoConEspacios}
                                 </Text>
                             </View>
                             <View>
@@ -348,7 +353,7 @@ const PrintPage = ({ convocatoria }) => {
                             </View>
                             <View >
                                 <View>
-                                    <Text style={{...styles.title, fontSize: "4mm", fontWeight: "bold" }}>
+                                    <Text style={{ ...styles.title, fontSize: "4mm", fontWeight: "bold" }}>
                                         PRUEBA DE CONOCIMIENTO
                                     </Text>
                                     <Text style={{ textAlign: "justify", marginLeft: "20px" }}>
@@ -379,7 +384,7 @@ const PrintPage = ({ convocatoria }) => {
                             </View>
                             <View >
                                 <View style={{ display: "flex", alignItems: "center", marginTop: "80px", flexDirection: "column" }}>
-                                    <Text style={{ fontSize: "10px" }}>Rector <Text style={{color:"#000"}}>{data.rector}</Text> </Text>
+                                    <Text style={{ fontSize: "10px" }}>Rector <Text style={{ color: "#000" }}>{data.rector}</Text> </Text>
                                     <View style={{ display: "inline", justifyContent: "center" }}>
                                         <Text style={{ marginLeft: "5px" }}>{data.rector_encargado}</Text>
                                     </View>
@@ -388,13 +393,13 @@ const PrintPage = ({ convocatoria }) => {
                                 <View style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", marginTop: "60px", textAlign: "center" }}>
                                     <View style={{ width: "50%" }}>
                                         <View style={{ display: "inline", justifyContent: "center" }}>
-                                            <Text style={{ margin: "0px", fontSize: "10px" }}>Decano <Text styles={{color:"#000"}}>{data.decano}</Text> </Text>
+                                            <Text style={{ margin: "0px", fontSize: "10px" }}>Decano <Text styles={{ color: "#000" }}>{data.decano}</Text> </Text>
                                             <Text style={{ marginLeft: "5px" }}>{data.decano_encargado}</Text>
                                         </View>
                                     </View>
                                     <View style={{ width: "50%" }}>
                                         <View style={{ display: "inline", justifyContent: "center" }}>
-                                            <Text style={{ margin: "0px", fontSize: "10px" }}>Vicerrector Académico <Text styles={{color:"#000"}}>{data.vicerector}</Text> </Text>
+                                            <Text style={{ margin: "0px", fontSize: "10px" }}>Vicerrector Académico <Text styles={{ color: "#000" }}>{data.vicerector}</Text> </Text>
                                             <Text style={{ marginLeft: "5px" }}>{data.vicerector_encargado}</Text>
                                         </View>
                                     </View>
@@ -406,48 +411,6 @@ const PrintPage = ({ convocatoria }) => {
                 </Page>
             ))}
         </Document>
-
-
-
-
-        // <Document>
-
-
-        // {
-        //     (data.complementaria?<div style={{ margin: "5px", textAlign: "justify" }}><Divider></Divider><span style={{ fontWeight: "bold" }}>Labor Complementaria:</span> {data.complementaria}</div>:"")
-        // }
-        // </div>
-
-
-
-        // <div >
-        //     <div style={{ display: "flex", alignItems: "center", marginTop: "80px", flexDirection: "column" }}>
-        //         <div style={{ fontSize: "0.8rem" }}>Rector {data.rector}</div>
-        //         <div style={{ display: "inline", justifyContent: "center" }}>
-        //             <span style={{ marginLeft: "5px" }}>{data.rector_encargado}</span>
-        //         </div>
-        //     </div>
-        //     <p style={{ marginTop: "20px" }}>Revisado por:</p>
-        //     <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", marginTop: "80px", textAlign: "center" }}>
-        //         <div style={{ width: "50%" }}>
-        //             <div style={{ display: "inline", justifyContent: "center" }}>
-        //                 <p style={{ margin: "0px", fontSize: "0.8rem" }}>Decano {data.decano}</p>
-        //                 <span style={{ marginLeft: "5px" }}>{data.decano_encargado}</span>
-        //             </div>
-        //         </div>
-        //         <div style={{ width: "50%" }}>
-        //             <div style={{ display: "inline", justifyContent: "center" }}>
-        //                 <p style={{ margin: "0px", fontSize: "0.8rem" }}>Vicerrector Académico {data.vicerector}</p>
-        //                 <span style={{ marginLeft: "5px" }}>{data.vicerector_encargado}</span>
-        //             </div>
-        //         </div>
-        //     </div>
-        // </div>
-        //                 </div >
-        //             </div >
-        //         </div >
-        //     </div >
-        // </>
     )
 
 }

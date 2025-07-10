@@ -19,7 +19,6 @@ import { SignInPage } from '@toolpad/core/SignInPage';
 import { useTheme } from '@mui/material/styles';
 
 import Swal from 'sweetalert2'
-import { useContext } from 'react';
 
 import { appFirebase } from '../../Firebase/FirebaseConfig';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
@@ -149,13 +148,6 @@ function Subtitle() {
 
 const LoginForm = () => {
 
-  // const [email, setEmail]=React.useState();
-  // const [password, setPassword]=React.useState();
-  // const [registrando, setRegistrando]=React.useState();
-
-
-  
-
   const logueo = async (email, password) => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
@@ -177,29 +169,6 @@ const LoginForm = () => {
       }
     }
   }
-  // const logueo = async (email, password) => {
-  //   setPersistence(auth, browserSessionPersistence)
-  //   .then(() => {
-  //     return signInWithEmailAndPassword(auth, email, password);
-  //   })
-  //   .catch((error) => {
-  //     if (error.code == 'auth/invalid-email') {
-  //       alert("El correo no es válido")
-  //       Swal.fire({
-  //         icon: 'error',
-  //         title: 'Oops...',
-  //         html: `El correo ingresado es invalido`,
-  //       });
-  //     } else {
-  //       Swal.fire({
-  //         icon: 'error',
-  //         title: 'Oops...',
-  //       html: `<b>Credenciales inválidas</b><br><br>Se ha generado un error al intentar validar las credenciales<br><br>Error: ${error.code}`,
-  //       });
-  //       console.log("Error: " + error.code + ": " + error.message);
-  //     }
-  //   });    
-  // }
 
   const theme = useTheme();
   return (

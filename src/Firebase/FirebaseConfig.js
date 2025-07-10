@@ -1,7 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-//import { VITE_FIREBASE__API_KEY, VITE_FIREBASE__AUTH_DOMAIN, VITE_FIREBASE__DATABASE_URL, VITE_FIREBASE__PROJECT_ID, VITE_FIREBASE__STORAGE_BUCKET, VITE_FIREBASE__MESSAGING_SENDER_ID, VITE_FIREBASE__APP_ID } from "@env/vite.env";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 

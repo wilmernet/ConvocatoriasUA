@@ -165,7 +165,7 @@ const Course = ({ facultad }) => {
         //-------------- INICIA ALMACENAMIENTO DE LA FILA --------------
         const upData = async () => {
             if (newRow.nombre && newRow.intensidad) {
-                await setDoc(doc(db, "cursos", newRow.id), { facultad: rolFacultad.id, nombre: newRow.nombre, intensidad: newRow.intensidad });  // para salvar una convocatoria gral
+                await setDoc(doc(db, "cursos", newRow.id), { facultad: rolFacultad.id, nombre: newRow.nombre, intensidad: newRow.intensidad, ciudad:'Florencia' });  // para salvar una convocatoria gral
                 Swal.fire({
                     position: "center-center",
                     icon: "success",

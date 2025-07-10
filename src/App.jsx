@@ -12,54 +12,26 @@ import { DataProvider } from "./context/DataContext";
 
 
 const App = () => {
-    const [user, setUser]= useState(null);
-    const [email, setEmail]= useState('');
-    onAuthStateChanged(auth, (userFirebase)=>{
-      if(userFirebase){       
-        setEmail(userFirebase.email);
-        setUser(userFirebase);
-      }else{
-        setEmail('');
-        setUser(null);        
-      }
-    })
+  const [user, setUser] = useState(null);
+  const [email, setEmail] = useState('');
+  
+  onAuthStateChanged(auth, (userFirebase) => {
+    if (userFirebase) {
+      setEmail(userFirebase.email);
+      setUser(userFirebase);
+    } else {
+      setEmail('');
+      setUser(null);
+    }
+  })
 
   return (
-     <DataProvider>
+    <DataProvider>
       <div>
-        {user?<Dashboard email={email}/>:<LoginForm/>}
-        {/* <Dashboard /> */}
-
-        {/* <PDFDownloadLink document={<PrintPageCeatePDF />} fileName="myfirstpdf.pdf">
-        {({ loading, url, error, blob }) =>
-          loading ? (
-            <button>Loading Document ...</button>
-          ) : (
-            <button>Download now!</button>
-          )
-        }
-      </PDFDownloadLink>
-
-      <PDFViewer>
-        <PrintPageCeatePDF />
-      </PDFViewer> */}
+        {user ? <Dashboard email={email} /> : <LoginForm />}
       </div>
-      {/* <PrintPage />       */}
-      </DataProvider>
+    </DataProvider>
   );
-
-
-  // <div className='App'>       
-  //    {/* <Dashboard/>        */}
-  //     {/* <Prueba/> */}
-  //     <PrintPageCeatePDF/>
-  //     {/* <PrintPage/> */}
-  // </div>
-  // <PDFViewer>
-  //     <PrintPageCeatePDF />
-  //   </PDFViewer>
-
-
 
 }
 

@@ -128,12 +128,7 @@ const Editor = ({ numero_Convotatoria }) => {
     const [fecha_insc_fin, setFecha_insc_fin] = React.useState(null);
     const [fecha_prueba, setFecha_prueba] = React.useState(null);
     const [fecha_publicacion, setFecha_publicacion] = React.useState(null);
-    const [fecha, setFecha] = React.useState(null);    
-
-    // setFecha_insc_inicio(docSnap.data().insc_inicio); //kkkkkkkkkkkk
-    // setFecha_insc_fin(docSnap.data().insc_fin); //kkkkkkkkkkkk
-    // setFecha_prueba(docSnap.data().prue_fecha); //kkkkkkkkkkkk
-    // setFecha_publicacion(docSnap.data().publ_fecha); //kkkkkkkkkkkk
+    const [fecha, setFecha] = React.useState(null);
 
     const [dbConfig, setDbConfig] = useState({})
     const [open, setOpen] = useState(false);
@@ -204,12 +199,12 @@ const Editor = ({ numero_Convotatoria }) => {
                 setPrograma(docSnap.data().programa);
                 setAreaSelected(docSnap.data().area);
                 setCursosSeleccionados([...docSnap.data().cursos]);
-                setFecha(dayjs(new Date()));
                 const lunes = proximoLunes();
-                setFecha_insc_inicio(sumarNdias(dayjs(), 2));
-                setFecha_insc_fin(sumarNdias(dayjs(), 6));
-                setFecha_prueba(sumarNdias(dayjs(), 11));
-                setFecha_publicacion(sumarNdias(dayjs(), 13));
+                setFecha(dayjs(docSnap.data().fecha.toDate()));
+                setFecha_insc_inicio(dayjs(docSnap.data().insc_inicio.toDate()));
+                setFecha_insc_fin(dayjs(docSnap.data().insc_fin.toDate()));
+                setFecha_prueba(dayjs(docSnap.data().prue_fecha.toDate()));
+                setFecha_publicacion(dayjs(docSnap.data().publ_fecha.toDate()));
                 setIsLoading(false);
             } else {
                 console.log("No such document!");
@@ -229,6 +224,8 @@ const Editor = ({ numero_Convotatoria }) => {
         console.log(".........." + dbConfig);
     }
 
+
+    //----------- << CONVOCATORIA >> GUARDAR LA CONVOCATORIA ------------------------------------------------------------------------
     const handleSaveData = (e) => {
         e.preventDefault();
         let i = 1;
@@ -245,6 +242,9 @@ const Editor = ({ numero_Convotatoria }) => {
         if (dbConfig.area == "") {
             camposFaltantes.push(`${i++}) Área convocada<br/>`);
         }
+        // if (dbConfig.cursos.length == 0) {
+        //     camposFaltantes.push("Cursos convocados");
+        // }
         if (dbConfig.pregrado == "") {
             camposFaltantes.push(`${i++}) Título Profesional del aspirante<br/>`);
         }
@@ -301,21 +301,30 @@ const Editor = ({ numero_Convotatoria }) => {
         }
         if (camposFaltantes.length == 0) {
             let duplicado = false;
+            const listadoConvocatorias = [];
             const upData = async () => {
-                await setDoc(doc(db, "convocatorias", numero_Convotatoria), dbConfig);
+                await setDoc(doc(db, "convocatorias", numero_Convotatoria), {
+                    ...dbConfig,
+                    facultad: rolFacultad.id,
+                    fecha: fecha.toDate(),
+                    insc_inicio: fecha_insc_inicio.toDate(),
+                    insc_fin: fecha_insc_fin.toDate(),
+                    prue_fecha: fecha_prueba.toDate(),
+                    publ_fecha: fecha_publicacion.toDate()
+                });
+                handleCancel();
             }
             upData();
-            setDataValue(false);
-            setCursosSeleccionados([]);
             Swal.fire({
-                // position: "top-end",
                 position: "center",
                 icon: "success",
-                title: "Cambios guardados con éxito",
+                title: 'Cambios salvados con éxito',
+                html: `Convocatoria Número ${dbConfig.numero}`,
                 showConfirmButton: false,
                 timer: 1500
             });            
-        } else {
+        }
+        else {
             Swal.fire({
                 icon: 'error',
                 title: 'Oops...',
@@ -323,6 +332,32 @@ const Editor = ({ numero_Convotatoria }) => {
             });
         }
     }
+
+
+    //     if (camposFaltantes.length == 0) {
+    //         let duplicado = false;
+    //         const upData = async () => {
+    //             await setDoc(doc(db, "convocatorias", numero_Convotatoria), dbConfig);
+    //         }
+    //         upData();
+    //         setDataValue(false);
+    //         setCursosSeleccionados([]);
+    //         Swal.fire({
+    //             // position: "top-end",
+    //             position: "center",
+    //             icon: "success",
+    //             title: "Cambios guardados con éxito",
+    //             showConfirmButton: false,
+    //             timer: 1500
+    //         });
+    //     } else {
+    //         Swal.fire({
+    //             icon: 'error',
+    //             title: 'Oops...',
+    //             html: `Falta información por diligenciar: <br/><br/> ${camposFaltantes}`,
+    //         });
+    //     }
+    // }
 
     const handleOpen = () => {
         setOpen(true);
@@ -390,25 +425,17 @@ const Editor = ({ numero_Convotatoria }) => {
                         Editando la convocatoria <span style={{ margin: "5px", color: "red", fontWeight: "bold" }}>{dbConfig.numero}</span> del
                         <div sx={{ width: "20px", border: "solid" }}>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                {/* {fecha ? <div style={{margin:"5px", width: "150px", marginRight: "20px" }}>                                    
-                                        <DatePicker                                            
-                                            defaultValue={fecha}
-                                            onChange={(newDate) => {
-                                                setFecha(newDate);
-                                                setDbConfig({ ...dbConfig, fecha: new Date(newDate) });
-                                            }}
-                                            format="DD/MM/YYYY"
-                                        />
-                                    </div> : <p>cargando Fecha</p>
-                                    }                                 */}
-                                {fecha ? <div style={{ margin: "5px", width: "150px", marginRight: "20px" }}>
-                                    <DateField
-                                        label="Fecha"
-                                        defaultValue={dayjs('2022-04-17')}
-                                        format="DD-MM-YYYY"
-                                    />
-                                </div> : <p>cargando Fecha</p>
-                                }
+                                <div style={{ width: "200px", marginLeft: "10px" }}>
+                                    {fecha ? <DatePicker
+                                        label="Fecha convocatoria"
+                                        defaultValue={fecha}
+                                        onChange={(newDate) => {
+                                            setDbConfig({ ...dbConfig, fecha: newDate.toDate() });
+                                            setFecha(newDate);
+                                        }}
+                                        format="DD/MM/YYYY"
+                                    /> : <p>cargando Fecha</p>}
+                                </div>
                             </LocalizationProvider>
                         </div>
                     </Typography>
@@ -427,34 +454,7 @@ const Editor = ({ numero_Convotatoria }) => {
                                 <Button variant="outlined" type='submit' endIcon={<SaveIcon />} onClick={handleSaveData}>
                                     Guardar
                                 </Button>
-                                <Button variant="outlined" endIcon={<PrintIcon />} onClick={handleOpen}>
-                                    Imprimir
-                                </Button>
-                                <Modal
-                                        open={open}
-                                        onClose={handleClose}
-                                        aria-labelledby="modal-title"
-                                        aria-describedby="modal-description"
-                                    >
-                                        <Box sx={{
-                                            position: 'absolute',
-                                            top: '50%',
-                                            left: '50%',
-                                            transform: 'translate(-50%, -50%)',
-                                            width: 800,
-                                            height: "100vh",
-                                            bgcolor: 'background.paper',
-                                            border: '2px solid #000',
-                                            boxShadow: 24,
-                                            p: 4,
-                                            overflowY: 'auto',
-                                        }}>
-                                            {/* <PrintPage data={dbConfig}/> */}
-                                            <PrintPage convocatoria={numero_Convotatoria} />
-                                            {/* <PrintPage data={{ ...dbConfig }} convocatoria={"CONF-CONVOCATORIA"} /> */}
-                                        </Box>
-                                    </Modal>
-                                
+
                             </Stack>
                         </div>
                     </Box>
@@ -540,11 +540,11 @@ const Editor = ({ numero_Convotatoria }) => {
                                         name="row-radio-buttons-group"
                                         // defaultValue={"" + dbConfig.primera_vez}
                                         value={"" + dbConfig.primera_vez}
-                                        defaultValue="true"
+                                        defaultValue={true}
                                         onChange={handleChangePrimeraVez}
                                     >
-                                        <FormControlLabel value="true" control={<Radio />} label="Primera vez" />
-                                        <FormControlLabel value="false" control={<Radio />} label="Segunda vez" />
+                                        <FormControlLabel value={true} control={<Radio />} label="Primera vez" />
+                                        <FormControlLabel value={false} control={<Radio />} label="Segunda vez" />
                                     </RadioGroup>
                                 </div>
                             </FormControl>
@@ -819,10 +819,9 @@ const Editor = ({ numero_Convotatoria }) => {
                                         label="Fecha de inicio"
                                         required
                                         defaultValue={fecha_insc_inicio}
-                                        // onChange={(newDate)=>setSelectedDate(newDate)}
                                         onChange={(newDate) => {
-                                            setDbConfig({ ...dbConfig, insc_inicio: new Date(newDate) });
-                                            setFecha_insc_inicio(new Date(newDate))
+                                            setDbConfig({ ...dbConfig, insc_inicio: newDate.toDate() });
+                                            setFecha_insc_inicio(newDate);
                                         }}
                                         format="DD/MM/YYYY"
                                     /> : <p>cargando Fecha</p>
@@ -832,8 +831,8 @@ const Editor = ({ numero_Convotatoria }) => {
                                         required
                                         defaultValue={fecha_insc_fin}
                                         onChange={(newDate) => {
-                                            setDbConfig({ ...dbConfig, insc_fin: new Date(newDate) });
-                                            setFecha_insc_fin(new Date(newDate))
+                                            setDbConfig({ ...dbConfig, insc_fin: newDate.toDate() });
+                                            setFecha_insc_fin(newDate);
                                         }}
                                         format="DD/MM/YYYY"
                                     /> : <p>cargando Fecha</p>
@@ -900,10 +899,11 @@ const Editor = ({ numero_Convotatoria }) => {
                                             label="Fecha y Hora de la prueba"
                                             defaultValue={fecha_prueba}
                                             onChange={(newDate) => {
-                                                setDbConfig({ ...dbConfig, prue_fecha: new Date(newDate) });
-                                                setFecha_prueba(new Date(newDate))
+                                                setFecha_prueba(newDate);
+                                                setDbConfig({ ...dbConfig, prue_fecha: fecha_prueba.toDate() });
                                             }}
-                                            format="DD/MM/YYYY HH:mm A"
+                                            // format="DD/MM/YYYY HH:mm A"
+                                            renderInput={(params) => <TextField {...params} fullWidth />}
                                         /> : <p>cargando Fecha</p>
                                         }
                                     </LocalizationProvider>
@@ -947,8 +947,8 @@ const Editor = ({ numero_Convotatoria }) => {
                                             label="Fecha para publicación de resultados"
                                             defaultValue={fecha_publicacion}
                                             onChange={(newDate) => {
-                                                setDbConfig({ ...dbConfig, publ_fecha: new Date(newDate) });
-                                                setFecha_publicacion(new Date(newDate))
+                                                setDbConfig({ ...dbConfig, publ_fecha: newDate.toDate() });
+                                                setFecha_publicacion(newDate);
                                             }}
                                             format="DD/MM/YYYY"
                                         />

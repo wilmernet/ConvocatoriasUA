@@ -1,84 +1,73 @@
-import Button from '@mui/material/Button';
-import Stack from '@mui/material/Stack';
-import PrintIcon from '@mui/icons-material/Print';
-import BackspaceIcon from '@mui/icons-material/Backspace';
-// import CircularProgress from '@mui/material/CircularProgress';
-import LinearProgress from '@mui/material/LinearProgress';
-import IconButton from '@mui/material/IconButton';
-import ArrowCircleRightIcon from '@mui/icons-material/ArrowCircleRight';
-import ArrowCircleLeftIcon from '@mui/icons-material/ArrowCircleLeft';
-import SaveIcon from '@mui/icons-material/Save';
-import SectionCard from '../Card/SectionCard';
-import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
-import Divider from '@mui/material/Divider';
-import SearchAndSelect from '../SearchAndSelect/SearchAndSelect';
-import Radio from '@mui/material/Radio';
-import RadioGroup from '@mui/material/RadioGroup';
-import FormControlLabel from '@mui/material/FormControlLabel';
+import { useState, useEffect, useContext } from "react";
+import { DataContext } from '../../context/DataContext';
 
-import Swal from 'sweetalert2'
-
-import Card from '@mui/material/Card';
-import CardActions from '@mui/material/CardActions';
-import CardContent from '@mui/material/CardContent';
-import Typography from '@mui/material/Typography';
-import Checkbox from '@mui/material/Checkbox';
-
-//----- fireBase -------
-import db from "../../Firebase/FirebaseConfig";
-import { collection, query, where, doc, getDoc, getDocs, setDoc, updateDoc } from "firebase/firestore";
+// ---------------------- CSS Y OTROS COMPONENTES --------------------------------------------------------------------------------------
+import "./CallForm.css";
 import PrintPage from '../PrintPage/PrintPage';
 
-//----------------------
-import React, { useState, useEffect, useContext } from "react";
-import { DataContext } from '../../context/DataContext';
-import "./CallForm.css";
-import Box from '@mui/material/Box';
-import TextField from '@mui/material/TextField';
-import TimeDate from "../TimeDate/TimeDate";
-// import FormControl from '@mui/material/FormControl';
-// import { InputLabel, Input, FormHelperText } from "@mui/material";
+// ---------------------- COMPONENTES MUI ----------------------------------------------------------------------------------------------
+import { Box, Button, CardActions, CardContent, Checkbox, Divider, FormControl, FormControlLabel, InputLabel, LinearProgress } from '@mui/material';
+import { MenuItem, Modal, Radio, RadioGroup, Select, Stack, Typography, TextField, Tabs, Tab } from '@mui/material';
 
-import { InputLabel, MenuItem, FormControl, Select } from '@mui/material';
-
-import SchoolIcon from '@mui/icons-material/School';
-import HomeRepairServiceIcon from '@mui/icons-material/HomeRepairService';
+// ---------------------- ICONS ---------------------------------------------------------------------------------------------------------
+import ArrowCircleRightIcon from '@mui/icons-material/ArrowCircleRight';
+import ArrowCircleLeftIcon from '@mui/icons-material/ArrowCircleLeft';
 import AssuredWorkloadIcon from '@mui/icons-material/AssuredWorkload';
 import AutoStoriesIcon from '@mui/icons-material/AutoStories';
+import BackspaceIcon from '@mui/icons-material/Backspace';
 import BorderColorIcon from '@mui/icons-material/BorderColor';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import DrawIcon from '@mui/icons-material/Draw';
 import EmojiPeopleIcon from '@mui/icons-material/EmojiPeople';
-// import DesignServicesIcon from '@mui/icons-material/DesignServices';
+import HomeRepairServiceIcon from '@mui/icons-material/HomeRepairService';
+import PrintIcon from '@mui/icons-material/Print';
+import SaveIcon from '@mui/icons-material/Save';
+import SchoolIcon from '@mui/icons-material/School';
 
-// ---------------------- TABS CONFIG ----------------------
-
-import NoteAddIcon from '@mui/icons-material/NoteAdd';
-import FindInPageIcon from '@mui/icons-material/FindInPage';
-import ConstructionIcon from '@mui/icons-material/Construction';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-
-// ---------------------- DATE ----------------------
+// ---------------------- DATE --------------------------------------------------------------------------------------------------------
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import dayjs from 'dayjs';
 
-import Modal from '@mui/material/Modal';
-// import AdapterDateFns from '@mui/lab/AdapterDateFns';
-// import LocalizationProvider from '@mui/lab/LocalizationProvider';
-
-
+// ---------------------- UTILS -------------------------------------------------------------------------------------------------------
 import PropTypes from 'prop-types';
-import Tabs from '@mui/material/Tabs';
-import Tab from '@mui/material/Tab';
-import { border, display, margin, width } from '@mui/system';
+import SearchAndSelect from '../SearchAndSelect/SearchAndSelect';
+
+// ---------------------- SWAL --------------------------------------------------------------------------------------------------------
+import Swal from 'sweetalert2'
+
+// ---------------------- PDF RENDERER ------------------------------------------------------------------------------------------------
+import { PDFDownloadLink, PDFViewer } from '@react-pdf/renderer';
+
+// ---------------------- FIREBASE ----------------------------------------------------------------------------------------------------
+import db from "../../Firebase/FirebaseConfig";
+import { collection, query, where, doc, getDoc, getDocs, setDoc, updateDoc, limit, Timestamp } from "firebase/firestore";
 
 
-// ---------------------- LISTAS ----------------------
-// import { List, ListItem, ListItemText, ListItemIcon } from '@mui/material';
-// import { Logger } from 'html2canvas/dist/types/core/logger';
+//=====================================================================================================================================
+//   <<<<<<<<<<<<<<<|   FUNCIONES AUXILIARES    |>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+//===================================================================================================================================== 
+
+
+// ----------------------  SUMAR N DÍAS HÁBILES A UNA FECHA ----------------------------------------
+const sumarNdias = (date, daysToAdd) => {
+    let newDate = dayjs(date);
+    let addedDays = 0;
+
+    while (addedDays < daysToAdd) {
+        newDate = newDate.add(1, 'day');
+        const dayOfWeek = newDate.day();
+        // Si no es sábado (6) ni domingo (0), cuenta como día hábil
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+            addedDays++;
+        }
+    }
+    return newDate;
+};
+
+// ----------------------  ADMINISTRAR LAS PESTAÑAS DEL FORMULARIO (PANEL) -------------------------------------
 
 const label = { inputProps: { 'aria-label': 'Funcionario Encargado' } };
 
@@ -111,70 +100,51 @@ function a11yProps(index) {
     };
 }
 
-// const BasicTabs = () => {
-//     return (
-//         <Box sx={{ width: '100%' }}>
-//             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-//                 <Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
-//                     <Tab label="Item One" {...a11yProps(0)} />
-//                     <Tab label="Item Two" {...a11yProps(1)} />
-//                     <Tab label="Item Three" {...a11yProps(2)} />
-//                 </Tabs>
-//             </Box>
-//             <CustomTabPanel value={value} index={0}>
-//                 Item One
-//             </CustomTabPanel>
-//             <CustomTabPanel value={value} index={1}>
-//                 Item Two
-//             </CustomTabPanel>
-//             <CustomTabPanel value={value} index={2}>
-//                 Item Three
-//             </CustomTabPanel>
-//         </Box>
-//     );
-// }
+//=====================================================================================================================================
+//   <<<<<<<<<<<<<<<|   COMPONENTE: FORMULARIO NUEVA CONVOCATORIA     |>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+//===================================================================================================================================== 
 
-// ---------------------- END TABS CONFIG ----------------------
+const CallFormFinally = () => {
 
-const CallForm = () => {
     const { rolFacultad, dataValue, setDataValue, cursosSeleccionados, setCursosSeleccionados } = useContext(DataContext);
-
     const [isLoading, setIsLoading] = useState(true);
-    const [listRequirement, setListRequirement] = useState([])
+    const [isPrintable, setIsPrintable] = useState(false);
     const [verRectorEncargado, setVerRectorEncargado] = useState(false);
     const [verVicerectorEncargado, setVerVicerectorEncargado] = useState(false);
     const [verDecanoEncargado, setVerDecanoEncargado] = useState(false);
     const [textRequisitos, setTextRequisitos] = useState(``);
-    const [programa, setPrograma] = React.useState('');
-    const [tipoDocente, setTipoDocente] = React.useState('');
-    const [fecha_insc_inicio, setFecha_insc_inicio] = React.useState(null);
-    const [fecha_insc_fin, setFecha_insc_fin] = React.useState(null);
-    const [fecha_prueba, setFecha_prueba] = React.useState(null);
-    const [fecha_publicacion, setFecha_publicacion] = React.useState(null);
-    const [fecha, setFecha] = React.useState(null);
-    const [salvado, setSalvado] = React.useState(false);
-    const [idAsignado, setIdAsignado] = React.useState(null);
+    const [programa, setPrograma] = useState('');  // para cargar los programas de la facultad en el Select
+    const [tipoDocente, setTipoDocente] = useState(''); // para cargar el tipo de docente en el Select
+    const [areaSelected, setAreaSelected] = useState(''); // para cargar el área de concurso en el Select
+    const [update, setUpdate] = useState(false); //validar si se va a crear o modificar una convocatoria
+    const [idAsignado, setIdAsignado] = useState('');   // id de la convocatoria que se va a editar
+    const [value, setValue] = useState(0);   // empleado para avanzar o retroceder en las pestañas  
+    //fecha de convocatoria, fechas de inicio y fin de inscripción, fecha de prueba y fecha de publicación de la convocatoria
+    const [fecha, setFecha] = useState(dayjs());
+    const [fecha_insc_inicio, setFecha_insc_inicio] = useState(sumarNdias(dayjs(), 2));
+    const [fecha_insc_fin, setFecha_insc_fin] = useState(sumarNdias(dayjs(), 6));
+    const [fecha_prueba, setFecha_prueba] = useState(sumarNdias(dayjs(), 11));
+    const [fecha_publicacion, setFecha_publicacion] = useState(sumarNdias(dayjs(), 13));
 
-    // setFecha_insc_inicio(docSnap.data().insc_inicio); //kkkkkkkkkkkk
-    // setFecha_insc_fin(docSnap.data().insc_fin); //kkkkkkkkkkkk
-    // setFecha_prueba(docSnap.data().prue_fecha); //kkkkkkkkkkkk
-    // setFecha_publicacion(docSnap.data().publ_fecha); //kkkkkkkkkkkk
 
     const [dbConfig, setDbConfig] = useState({})
-    const [open, setOpen] = useState(false);
+    const [openModal, setOpenModal] = useState(false);  // abrir modal para imprimir convocatoria
     const [areas, setAreas] = useState([]);
-    const [areaSelected, setAreaSelected] = useState('');
     const [cursos, setCursos] = useState([]);
-    // const [cursosSelect, setCursosSelect] = useState([]);
 
+    //=====================================================================================================================================
+    //   <<<<<<<<<<<<<<<|    HOOOKS useEffect()      |>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    //===================================================================================================================================== 
+
+    //----------- << FORMULARIO >>  CARGAR LAS ÁREAS DEL CONCURSO SEGÚN EL PROGRAMA SELECCIONADO  --------------------------------
     useEffect(() => {
-        setDbConfig({ ...dbConfig, cursos: cursosSeleccionados });
-    }, [cursosSeleccionados]);
+        setIsPrintable(false);
+    }, [dbConfig]);
 
-//------------------------- CARGAR LAS ÁREAS DEL CONCURSO SEGÚN EL PROGRAMA SELECCIONADO -----------------------
+    //----------- << FORMULARIO >>  CARGAR LAS ÁREAS DEL CONCURSO SEGÚN EL PROGRAMA SELECCIONADO  --------------------------------
     useEffect(() => {
         const downData = async () => {
-            if(programa === '') return; // Si no hay programa seleccionado, no hacer nada
+            if (programa === '') return; // Si no hay programa seleccionado, no hacer nada
             const docRef = doc(db, "areasXprograma", programa);
             const docSnap = await getDoc(docRef);
 
@@ -187,7 +157,7 @@ const CallForm = () => {
         downData();
     }, [programa]);
 
-    //------------------------- CARGAR LOS CURSOS QUE OFERTA LA FACULTAD  -----------------------
+    //----------- << FORMULARIO >>  CARGAR LOS CURSOS QUE OFERTA LA FACULTAD -------------------------------------------------------
     useEffect(() => {
         const downData = async () => {
             const q = query(collection(db, "cursos"), where("facultad", "==", rolFacultad.id));
@@ -196,115 +166,46 @@ const CallForm = () => {
             querySnapshot.forEach((doc) => {
                 cursosEncontrados.push({ ...doc.data(), id: doc.id });
             });
-            // const cursosOrdenados=cursosEncontrados.sort();
-            // setCursos(cursosOrdenados);
             setCursos([...cursosEncontrados].sort((a, b) => a.nombre.localeCompare(b.nombre)));
         }
         downData();
-        // console.log(rolFacultad.id);
-        // console.log(cursos);
     }, []);
-//------------------------------------------------ 
-    function sumarNdias(fechaInicial, dias) {
-        let fechaFinal = fechaInicial;
-        let contador = 0;
-        while (contador < dias) {
-            fechaFinal = fechaFinal.add(1, 'day');
-            // Verificar si es fin de semana (sábado o domingo)
-            if (fechaFinal.day() !== 0 && fechaFinal.day() !== 6) {
-                contador++;
-            }
-        }
-        return fechaFinal;
-    }
-    function proximoLunes() {
-        let fechaActual = dayjs(new Date());
-        let diaActual = fechaActual.day();
-        let diasQueFaltan = (8 - diaActual) % 7;
-        return fechaActual.add(diasQueFaltan, 'day');
-    }
 
-//------------------------- CARGAR LA PLANTILLA DE CONVOCATORIA DE LA FACULTAD -----------------------
+    //----------- << CONVOCATORIA >>  ACTUALIZAR LOS CURSOS SELECCIONADOS  --------------------------------------------------------
+    useEffect(() => {
+        setDbConfig({ ...dbConfig, cursos: cursosSeleccionados });
+    }, [cursosSeleccionados]);
+
+    //----------- << CONVOCATORIA >>  CARGAR LA PLANTILLA DE CONVOCATORIA DE LA FACULTAD -----------------------------------------
     useEffect(() => {
         const downData = async () => {
-            // const docRef = doc(db, "config", "CONF-CONVOCATORIA");
-            const facultadMayuscula = rolFacultad.id.toUpperCase();            
+            const facultadMayuscula = rolFacultad.id.toUpperCase();
             const docRef = doc(db, "config", `CONF-${facultadMayuscula}`);
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
-                // setDbConfig({ ...docSnap.data(), insc_lugar: "Solo por el correo " + rolFacultad.correo, prue_lugar: "Oficina de la facultad de " + rolFacultad.facultad, publ_lugar: rolFacultad.facultad, facultad: rolFacultad.facultad });
-                // setDbConfig({ ...docSnap.data(), fecha: dayjs(new Date())});
-                setListRequirement(docSnap.data().requisitos_lista);
                 setTextRequisitos(docSnap.data().requisitos);
-                // setFecha_prueba(dayjs(docSnap.data().prue_fecha).format('DD/MM/YYYY HH:mm'));
-                // setFecha_prueba(dayjs.unix(docSnap.data().prue_fecha));
-                //----------------------------------------
-                
-                const lunes = proximoLunes();
-                // setFecha_insc_inicio(dayjs(new Date()));
-                setFecha(dayjs());
-                setFecha_insc_inicio(sumarNdias(dayjs(), 2));
-                setFecha_insc_fin(sumarNdias(dayjs(), 6));
-                setFecha_prueba(sumarNdias(dayjs(), 11));
-                setFecha_publicacion(sumarNdias(dayjs(), 13));
-                const fechaActual= dayjs(new Date());
-                setDbConfig({ ...docSnap.data(), 
-                    facultad: rolFacultad.id, 
-                    fecha: fechaActual, 
-                    insc_inicio: sumarNdias(dayjs(), 2), 
-                    insc_fin: sumarNdias(dayjs(), 6), 
-                    prue_fecha: sumarNdias(dayjs(), 11), 
-                    publ_fecha: sumarNdias(dayjs(), 13) 
+                setDbConfig({
+                    ...docSnap.data(),
+                    facultad: rolFacultad.id,
+                    fecha: fecha.toDate(),
+                    insc_inicio: fecha_insc_inicio.toDate(),
+                    insc_fin: fecha_insc_fin.toDate(),
+                    prue_fecha: fecha_prueba.toDate(),
+                    publ_fecha: fecha_publicacion.toDate()
                 });
-                // setFecha_publicacion(dayjs(docSnap.data().publ_fecha));
-                // setFecha(new Date(dayjs(docSnap.data().fecha)));
-                // setFecha(dayjs(docSnap.data().fecha).format('DD/MM/YYYY'));
-                //----------------------------------------
-                // setFecha(dayjs.unix(docSnap.data().fecha.seconds).set('millisecond', docSnap.data().fecha.nanoseconds / 1000000));
-                // setFecha_insc_inicio(dayjs.unix(docSnap.data().insc_inicio.seconds).set('millisecond', docSnap.data().insc_inicio.nanoseconds / 1000000));
-                // setFecha_insc_fin(dayjs.unix(docSnap.data().insc_fin.seconds).set('millisecond', docSnap.data().insc_fin.nanoseconds / 1000000));
-                // setFecha_prueba(dayjs.unix(docSnap.data().prue_fecha.seconds).set('millisecond', docSnap.data().prue_fecha.nanoseconds / 1000000));
-                // setFecha_publicacion(dayjs.unix(docSnap.data().publ_fecha.seconds).set('millisecond', docSnap.data().publ_fecha.nanoseconds / 1000000));
                 setIsLoading(false);
-                setSalvado(false);
-                console.log(sumarNdias(fechaActual, 6));
-                
             } else {
-                console.log("No such document!");
+                console.log(`No se encontró una plantilla para la convocatoria para la facultad ${facultadMayuscula} !`);
             }
         }
         downData();
-            // alert(dbConfig.publ_lugar)
-            // setDbConfig({ ...dbConfig, publ_lugar: rolFacultad.facultad})
-            // console.log(dbConfig);
-        
-
-        // console.log(fecha_prueba);
-        // console.log("LUEGO "+dbConfig.publ_lugar);
-        // console.log(textRequisitos);
     }, []);
 
-    const [value, setValue] = useState(0);
+    //=====================================================================================================================================
+    //   <<<<<<<<<<<<<<<|    FUNCIONES MANEJADORAS      |>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    //===================================================================================================================================== 
 
-    const handleChange = (event, newValue) => {
-        setValue(newValue);
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        console.log(".........." + dbConfig);
-    }
-
-    const handleAddData = () => {
-        const upData = async () => {
-            const cityRef = doc(db, "config", "CONF-CONVOCATORIA");
-            await updateDoc(cityRef, {
-                requisitos: dbConfig.requisitos
-            });
-        }
-        upData();
-    }
-
+    //----------- << CONVOCATORIA >> GUARDAR LA CONVOCATORIA ------------------------------------------------------------------------
     const handleSaveData = (e) => {
         e.preventDefault();
         let i = 1;
@@ -380,7 +281,6 @@ const CallForm = () => {
         }
         if (camposFaltantes.length == 0) {
             let duplicado = false;
-            setIdAsignado(dbConfig.numero + "-" + dayjs().year() + "-" + rolFacultad.id);
             const listadoConvocatorias = [];
             const downData = async () => {
                 const querySnapshot = await getDocs(collection(db, "convocatorias"));
@@ -390,28 +290,40 @@ const CallForm = () => {
                 });
                 const convocatoriasRepetidas = listadoConvocatorias.filter((convocatoria) => { return convocatoria.id == idAsignado })
                 if (convocatoriasRepetidas.length > 0) {
-                    duplicado = true;
+                    if (!update) {
+                        duplicado = true;
+                    }
                 }
                 if (!duplicado) {
                     const upData = async () => {
-                        console.log(dbConfig);
-                        // await setDoc(doc(db, "config", "CONF-CONVOCATORIA"), dbConfig); // Para configurar la general
-                        // await setDoc(doc(db, "config", "CONF-TEST2"), dbConfig);  // para guardar cada facultad x defecto                        
-                        await setDoc(doc(db, "convocatorias", idAsignado), dbConfig);  // para salvar una convocatoria gral -----ORIGINAL
-                        console.log(dbConfig);                        
+                        await setDoc(doc(db, "convocatorias", idAsignado), dbConfig);  // para SALVAR LA NUEVA CONVOCATORIA                                                
                     }
-                    upData();                    
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Creada con éxito',
-                        html: `Convocatoria Número ${dbConfig.numero} del ${dayjs().year()}`,
-                    });                    
-                    setSalvado(true);
+                    upData();
+                    let texto;
+                    if(update){
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Modificada con éxito',
+                            html: `Convocatoria Número ${dbConfig.numero} del ${dayjs().year()}`,
+                        });
+                    }else{
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Creada con éxito',
+                            html: `Convocatoria Número ${dbConfig.numero} del ${dayjs().year()}`,
+                        });
+                    } 
+                    setUpdate(true);                    
                 } else {
-                    alert("Ya existe una convocatoria con el número " + dbConfig.numero + " en el para el año " + dayjs().year());
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops algo ha ocurrido...',
+                        html: `Ya existe una convocatoria con el número: <br/><br/> ${dbConfig.numero}<br/>para el año ${dayjs().year()}`,
+                    });
                 }
             }
             downData();
+            setIsPrintable(true);
         } else {
             Swal.fire({
                 icon: 'error',
@@ -421,44 +333,59 @@ const CallForm = () => {
         }
     }
 
-    const handleOpen = (e) => {
-        if (salvado) {
-            setOpen(true);            
-        } else {
-            Swal.fire({
-                title: "Generando vista de impresión",
-                text: "Antes de imprimir es necesario guardar los cambios!",
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonColor: "#3085d6",
-                cancelButtonColor: "#d33",
-                cancelButtonText: "No, cancelar!",
-                confirmButtonText: "Si, continuar!"
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    handleSaveData(e);
-                    // setOpen(true);
-                }
-            });
-
-
-            // Swal.fire({
-            //     title: "Guardar los Cambios?",
-            //     text: "Antes de imprimir es necesario guardar los cambios!",
-            //     icon: "warning",
-            //     showCancelButton: true,
-            //     confirmButtonColor: "#3085d6",
-            //     cancelButtonColor: "#d33",
-            //     confirmButtonText: "Si, guadar!"
-            // }).then((result) => {
-            //     if (result.isConfirmed) {
-            //         handleSaveData(e);
-            //     }
-            // })
+    //----------- << FORMULARIO >> BORRAR LOS DATOS CARGADOS DE LA CONVOCATORIA ------------------------------------------------------------------------
+    const handleCancel = () => {
+        setPrograma('');  // para cargar los programas de la facultad en el Select
+        setTipoDocente(''); // para cargar el tipo de docente en el Select
+        setAreaSelected(''); // para cargar el área de concurso en el Select
+        setUpdate(false);
+        setDataValue(false);
+        setCursosSeleccionados([]);
+        setFecha(dayjs());
+        setFecha_insc_inicio(sumarNdias(dayjs(), 2));
+        setFecha_insc_fin(sumarNdias(dayjs(), 6));
+        setFecha_prueba(sumarNdias(dayjs(), 11));
+        setFecha_publicacion(sumarNdias(dayjs(), 13));
+        setIsLoading(false);
+        setIsLoading(false);
+        setTipoDocente('');
+        setPrograma('');
+        setAreaSelected('');
+        setVerDecanoEncargado(false);
+        setVerVicerectorEncargado(false);
+        setVerRectorEncargado(false);
+        const downData = async () => {
+            const facultadMayuscula = rolFacultad.id.toUpperCase();
+            const docRef = doc(db, "config", `CONF-${facultadMayuscula}`);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                setTextRequisitos(docSnap.data().requisitos);
+                setDbConfig({
+                    ...docSnap.data(),
+                    facultad: rolFacultad.id,
+                    fecha: fecha,
+                    insc_inicio: fecha_insc_inicio,
+                    insc_fin: fecha_insc_fin,
+                    prue_fecha: fecha_prueba,
+                    publ_fecha: fecha_publicacion
+                });
+            } else {
+                console.log(`No se encontró una plantilla para la convocatoria para la facultad ${facultadMayuscula} !`);
+            }
         }
-    };
-    const handleClose = () => setOpen(false);
+        downData();
+    }
 
+    //----------- << FORMULARIO >> ABRIR/CERRAR VISTA PRELIMINAR DE LA CONVOCATORIA ------------------------------------------------------------------------
+    const handleOpenModal = () => setOpenModal(true);
+    const handleCloseModal = () => setOpenModal(false);
+
+    //----------- << FORMULARIO >> SELECCIONAR UNA NUEVA PESTAÑA DEL FORMULARIO ---------------------------------------------------  
+    const handleChange = (event, newValue) => {
+        setValue(newValue);
+    };
+
+    //----------- << FORMULARIO >> MOSTRAR/OCULTAR CAMPOS DE LOS ENCARGADOS  ------------------------------------------------------------------------
     const handleActivarEncargoRector = () => {
         setVerRectorEncargado(!verRectorEncargado);
         if (verRectorEncargado == true) {
@@ -472,7 +399,6 @@ const CallForm = () => {
             setDbConfig({ ...dbConfig, vicerector_encargado: "" })
         }
     }
-
     const handleActivarEncargoDecano = () => {
         setVerDecanoEncargado(!verDecanoEncargado);
         if (verDecanoEncargado == true) {
@@ -480,55 +406,9 @@ const CallForm = () => {
         }
     }
 
-    const handleChangeProgram = (event) => {
-        setPrograma(event.target.value);
-        setDbConfig({ ...dbConfig, programa: event.target.value });
-    }
-
-    const handleChangeTipoDocente = (event) => {
-        setTipoDocente(event.target.value);
-        setDbConfig({ ...dbConfig, vinculacion: event.target.value });
-    }
-
-    const handleChangeAreas = (event) => {
-        setAreaSelected(event.target.value);
-        setDbConfig({ ...dbConfig, area: event.target.value });
-    }
-
-    const handleChangePrimeraVez = (event) => {
-        // setAreaSelected(event.target.value);
-        setDbConfig({ ...dbConfig, primera_vez: event.target.value });
-    }
-
-    const handleCancel = () => {
-        setDataValue(false);
-        setCursosSeleccionados([]);        
-        const downData = async () => {
-            const facultadMayuscula = rolFacultad.id.toUpperCase();            
-            const docRef = doc(db, "config", `CONF-${facultadMayuscula}`);        
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {                
-                setDbConfig({ ...docSnap.data(), facultad: rolFacultad.id });
-                // setListRequirement(docSnap.data().requisitos_lista);
-                // setTextRequisitos(docSnap.data().requisitos);
-                setFecha(dayjs(new Date()));
-                const lunes = proximoLunes();
-                setFecha_insc_inicio(sumarNdias(dayjs(), 2));
-                setFecha_insc_fin(sumarNdias(dayjs(), 6));
-                setFecha_prueba(sumarNdias(dayjs(), 11));
-                setFecha_publicacion(sumarNdias(dayjs(), 13));
-                setIsLoading(false);
-                setSalvado(false);
-                setTipoDocente('');
-                setPrograma('');
-                setAreaSelected('');
-                setVerDecanoEncargado(false);
-                setVerVicerectorEncargado(false);
-                setVerRectorEncargado(false);
-            } 
-        }
-        downData();
-    }
+    //=====================================================================================================================================
+    //   <<<<<<<<<<<<<<<|    FORMULARIO      |>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    //===================================================================================================================================== 
     return (
         <div style={{ height: "100vh", maxWidth: "100vw", display: "flex", justifyContent: "center" }}>
             <div className='callForm'>
@@ -538,7 +418,6 @@ const CallForm = () => {
                     noValidate
                     autoComplete="off"
                     onSubmit={handleSaveData}
-                // onSubmit={handleSubmit}
                 >
                     <div className='Superior'>
 
@@ -550,58 +429,72 @@ const CallForm = () => {
                         >
                             {/* <Typography gutterBottom variant="h5" component="div" ></Typography> */}
                             <div style={{ display: "flex", width: "100%" }}>
-                                <TextField
-                                    // sx={{ marginRight: "20px" }}
-                                    sx={{ marginRight: "20px" }}
-                                    id="numero"
-                                    label="Número"
-                                    value={"" + dbConfig.numero}
-                                    disabled={isLoading}
-                                    variant="filled"
-                                    onChange={(event) => {
-                                        setDbConfig({ ...dbConfig, numero: event.target.value });
-                                    }}
-                                />
+                                {update ?
+                                    <TextField
+                                        // sx={{ marginRight: "20px" }}
+                                        sx={{ marginRight: "20px" }}
+                                        id="numero"
+                                        label="Número"
+                                        value={"" + dbConfig.numero}
+                                        disabled={true}
+                                        variant="filled"
+                                        onChange={(event) => {
+                                            setDbConfig({ ...dbConfig, numero: event.target.value });
+                                            setIdAsignado(event.target.value + "-" + (dayjs().format('YYYY')) + "-" + rolFacultad.id)
+                                        }}
+                                    />:
+                                    <TextField
+                                        // sx={{ marginRight: "20px" }}
+                                        sx={{ marginRight: "20px" }}
+                                        id="numero"
+                                        label="Número"
+                                        value={"" + dbConfig.numero}
+                                        disabled={isLoading}
+                                        variant="filled"
+                                        onChange={(event) => {
+                                            setDbConfig({ ...dbConfig, numero: event.target.value });
+                                            setIdAsignado(event.target.value + "-" + (dayjs().format('YYYY')) + "-" + rolFacultad.id)
+                                        }}
+                                    />
+                                }
                                 <div sx={{ width: "20px", border: "solid" }}>
                                     <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                        {fecha ? <div style={{ width: "150px", marginRight: "20px" }}>
+                                        <div style={{ width: "150px", marginRight: "20px" }}>
                                             <DatePicker
+                                                label="Fecha convocatoria"
                                                 defaultValue={fecha}
                                                 onChange={(newDate) => {
-                                                    setDbConfig({ ...dbConfig, fecha: new Date(newDate) });
-                                                    setFecha(new Date(newDate));                                                    
+                                                    setFecha(newDate);
+                                                    setDbConfig({ ...dbConfig, fecha: fecha.toDate() });
                                                 }}
                                                 format="DD/MM/YYYY"
+                                                renderInput={(params) => <TextField {...params} fullWidth />}
                                             />
-                                        </div> : <p>cargando Fecha</p>
-                                        }
-
-                                        {/* {fecha ? <DatePicker
-                                    label="Fecha"
-                                    defaultValue={fecha}
-                                    onChange={(newDate) => {
-                                        setDbConfig({ ...dbConfig, fecha: new Date(newDate) });
-                                        setFecha(new Date(newDate))
-                                    }}
-                                    format="DD/MM/YYYY"
-                                /> : <p>cargando Fecha</p>
-                                } */}
+                                        </div>
                                     </LocalizationProvider>
                                 </div>
                                 <Stack direction="row" spacing={2}>
                                     <Button variant="outlined" startIcon={<BackspaceIcon />} onClick={handleCancel}>
                                         Cancelar
                                     </Button>
-                                    {/* <Button variant="outlined" endIcon={<SaveIcon />} onClick={() => { handleSaveData() }} ss> */}
-                                    <Button variant="outlined" type='submit' endIcon={<SaveIcon />} onClick={handleSaveData}>
-                                        Guardar
-                                    </Button>
-                                    <Button variant="outlined" endIcon={<PrintIcon />} onClick={handleOpen}>
-                                        Imprimir
-                                    </Button>
+                                    {update ?
+                                        <Button variant="outlined" type='submit' endIcon={<SaveIcon />} onClick={handleSaveData}>
+                                            Modificar
+                                        </Button> :
+                                        <Button variant="outlined" type='submit' endIcon={<SaveIcon />} onClick={handleSaveData}>
+                                            Guardar
+                                        </Button>
+
+                                    }
+                                    {isPrintable ?
+                                        <Button variant="outlined" endIcon={<PrintIcon />} onClick={handleOpenModal}>
+                                            Imprimir
+                                        </Button> :
+                                        <Button variant="outlined" endIcon={<PrintIcon />} disabled>Imprimir</Button>
+                                    }
                                     <Modal
-                                        open={open}
-                                        onClose={handleClose}
+                                        open={openModal}
+                                        onClose={handleCloseModal}
                                         aria-labelledby="modal-title"
                                         aria-describedby="modal-description"
                                     >
@@ -618,37 +511,15 @@ const CallForm = () => {
                                             p: 4,
                                             overflowY: 'auto',
                                         }}>
-                                            <PrintPage convocatoria={idAsignado} />
-                                            {/* <PrintPage data={dbConfig}/> */}
-                                            {/* <PrintPage data={{ ...dbConfig }} convocatoria={"CONF-CONVOCATORIA"} /> */}
+                                            {name}
+                                            <PDFDownloadLink document={<PrintPage convocatoria={idAsignado} />} fileName="Convocatoria.pdf">
+                                                {({ loading }) => (loading ? 'Generando PDF...' : '')}
+                                            </PDFDownloadLink>
+                                            <PDFViewer style={{ width: '100%', height: "100%", display: "flex", justifyContent: 'center', alignItems: 'center' }}>
+                                                <PrintPage convocatoria={idAsignado} />
+                                            </PDFViewer>
                                         </Box>
                                     </Modal>
-                                    {/* {console.log(salvado)}
-                                    {console.log(idAsignado)}
-                                    {console.log(open)}
-                                     
-                                    {idAsignado ?
-                                        
-                                        :
-                                        {
-                                            salvado?{
-                                            }:
-                                                wal.fire({
-                                                    title: "Guardar los Cambios?",
-                                                    text: "Antes de imprimir es necesario guardar los cambios!",
-                                                    icon: "warning",
-                                                    showCancelButton: true,
-                                                    confirmButtonColor: "#3085d6",
-                                                    cancelButtonColor: "#d33",
-                                                    confirmButtonText: "Si, guadar!"
-                                                }).then((result) => {
-                                                    if (result.isConfirmed) {
-
-                                                        handleSaveData;
-                                                    }
-                                                })
-                                        }
-                                    } */}
                                 </Stack>
                             </div>
                         </Box>
@@ -695,7 +566,12 @@ const CallForm = () => {
                                             id="demo-simple-select1"
                                             value={tipoDocente}
                                             label="Tipo de Docente"
-                                            onChange={handleChangeTipoDocente}
+                                            onChange={(event) => {
+                                                setTipoDocente(event.target.value);
+                                                setDbConfig({ ...dbConfig, vinculacion: event.target.value });
+                                            }
+                                            }
+                                        // onChange={handleChangeTipoDocente}
                                         >
                                             <MenuItem value={"Catedrático"}>CATEDRÁTICO</MenuItem>
                                             <MenuItem value={"Ocasional Medio Tiempo"}>OCASIONAL MEDIO TIEMPO</MenuItem>
@@ -711,7 +587,12 @@ const CallForm = () => {
                                             id="demo-simple-select2"
                                             value={programa}
                                             label="Programa"
-                                            onChange={handleChangeProgram}
+                                            // onChange={handleChangeProgram}
+                                            onChange={(event) => {
+                                                setPrograma(event.target.value);
+                                                setDbConfig({ ...dbConfig, programa: event.target.value });
+                                            }
+                                            }
                                         >
                                             {rolFacultad.programas ? rolFacultad.programas.map((item) => {
                                                 return (<MenuItem value={item} key={item}>{item.toUpperCase()}</MenuItem>)
@@ -725,7 +606,13 @@ const CallForm = () => {
                                             id="demo-simple-select3"
                                             value={areaSelected}
                                             label="Area del conocimiento"
-                                            onChange={handleChangeAreas}
+                                            // onChange={handleChangeAreas}
+                                            onChange={
+                                                (event) => {
+                                                    setAreaSelected(event.target.value);
+                                                    setDbConfig({ ...dbConfig, area: event.target.value });
+                                                }
+                                            }
                                         >
                                             {areas.map((item) => {
                                                 return (<MenuItem value={item} key={item}>{item.toUpperCase()}</MenuItem>)
@@ -743,7 +630,12 @@ const CallForm = () => {
                                                 // defaultValue={"" + dbConfig.primera_vez}
                                                 value={"" + dbConfig.primera_vez}
                                                 defaultValue="true"
-                                                onChange={handleChangePrimeraVez}
+                                                // onChange={handleChangePrimeraVez}
+                                                onChange={
+                                                    (event) => {
+                                                        setDbConfig({ ...dbConfig, primera_vez: event.target.value });
+                                                    }
+                                                }
                                             >
                                                 <FormControlLabel value="true" control={<Radio />} label="Primera vez" />
                                                 <FormControlLabel value="false" control={<Radio />} label="Segunda vez" />
@@ -842,7 +734,7 @@ const CallForm = () => {
                                             setDbConfig({ ...dbConfig, pregrado: event.target.value });
                                         }}
                                     />
-                                    
+
                                     <TextField
                                         required
                                         id="outlined-controlled"
@@ -854,7 +746,7 @@ const CallForm = () => {
                                             setDbConfig({ ...dbConfig, posgrado: event.target.value });
                                         }}
                                     />
-                                    
+
                                     <TextField
                                         required
                                         id="outlined-controlled"
@@ -866,7 +758,7 @@ const CallForm = () => {
                                             setDbConfig({ ...dbConfig, conocimientos: event.target.value });
                                         }}
                                     />
-                                    
+
                                 </Box>
                                 {/* XXXXXXXXXXXXXXXXXXXXX */}
                                 <Typography gutterBottom variant="h5" component="div" sx={{ m: 1, color: "#1876D1", fontWeight: "3px" }}>
@@ -1016,13 +908,6 @@ const CallForm = () => {
                             <CardActions sx={{ position: "fixed", top: "90vh", background: "white", borderRadius: "15px", boxShadow: "5px 5px 10px black", zIndex: "3" }}>
                                 <Button size="small" onClick={() => { setValue(value - 1) }}><ArrowCircleLeftIcon />ANTERIOR</Button>
                                 <Button size="small" onClick={() => { setValue(value + 1) }}>SIGUIENTE <ArrowCircleRightIcon /></Button>
-
-                                {/*
-                                PARA CARGAR EL REISTRO INICIAL CON EL FORMATO REQUERIDO
-                                <Button type="button" variant="contained" onClick={()=>{handleAddData()}}>
-                                    ACTUALIZAR CAMPOS
-                                </Button> */}
-
                             </CardActions>
                             {/* </Card> */}
                         </CustomTabPanel>
@@ -1044,29 +929,26 @@ const CallForm = () => {
                                 >
                                     <LocalizationProvider dateAdapter={AdapterDayjs}>
                                         <div id="intervalDate" style={{ width: "50%", display: "flex", justifyContent: "space-between" }}>
-                                            {fecha_insc_inicio ? <DatePicker
+                                            <DatePicker
                                                 label="Fecha de inicio"
-                                                required
                                                 defaultValue={fecha_insc_inicio}
-                                                // onChange={(newDate)=>setSelectedDate(newDate)}
                                                 onChange={(newDate) => {
-                                                    setDbConfig({ ...dbConfig, insc_inicio: new Date(newDate) });
-                                                    setFecha_insc_inicio(new Date(newDate))
+                                                    setFecha_insc_inicio(newDate);
+                                                    setDbConfig({ ...dbConfig, insc_inicio: fecha_insc_inicio.toDate() });
                                                 }}
                                                 format="DD/MM/YYYY"
-                                            /> : <p>cargando Fecha</p>
-                                            }
-                                            {fecha_insc_fin ? <DatePicker
-                                                label="Fecha de finalización"
-                                                required
+                                                renderInput={(params) => <TextField {...params} fullWidth />}
+                                            />
+                                            <DatePicker
+                                                label="Fecha de Finalización"
                                                 defaultValue={fecha_insc_fin}
                                                 onChange={(newDate) => {
-                                                    setDbConfig({ ...dbConfig, insc_fin: new Date(newDate) });
-                                                    setFecha_insc_fin(new Date(newDate))
+                                                    setFecha_insc_fin(newDate);
+                                                    setDbConfig({ ...dbConfig, insc_fin: fecha_insc_fin.toDate() });
                                                 }}
                                                 format="DD/MM/YYYY"
-                                            /> : <p>cargando Fecha</p>
-                                            }
+                                                renderInput={(params) => <TextField {...params} fullWidth />}
+                                            />
                                         </div>
                                     </LocalizationProvider>
                                     <TextField
@@ -1128,17 +1010,16 @@ const CallForm = () => {
                                         />
                                         <div id="infoTest">
                                             <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                                {fecha_prueba ? <DateTimePicker
-                                                    required
-                                                    label="Fecha y Hora de la prueba"
+                                                <DateTimePicker
+                                                    label="Fecha y Hora de la Prueba"
                                                     defaultValue={fecha_prueba}
                                                     onChange={(newDate) => {
-                                                        setDbConfig({ ...dbConfig, prue_fecha: new Date(newDate) });
-                                                        setFecha_prueba(new Date(newDate))
+                                                        setFecha_prueba(newDate);
+                                                        setDbConfig({ ...dbConfig, prue_fecha: fecha_prueba.toDate() });
                                                     }}
                                                     format="DD/MM/YYYY HH:mm A"
-                                                /> : <p>cargando Fecha</p>
-                                                }
+                                                    renderInput={(params) => <TextField {...params} fullWidth />}
+                                                />
                                             </LocalizationProvider>
                                             <TextField
                                                 required
@@ -1178,22 +1059,20 @@ const CallForm = () => {
                                 >
                                     <div id="infoTest">
                                         <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                            {fecha_publicacion ? <div style={{ marginRight: "20px" }}>
+                                            <div style={{ marginRight: "20px" }}>
                                                 <DatePicker
-                                                    required
                                                     label="Fecha para publicación de resultados"
                                                     defaultValue={fecha_publicacion}
                                                     onChange={(newDate) => {
-                                                        setDbConfig({ ...dbConfig, publ_fecha: new Date(newDate) });
-                                                        setFecha_publicacion(new Date(newDate))
+                                                        setFecha_publicacion(newDate);
+                                                        setDbConfig({ ...dbConfig, publ_fecha: fecha_publicacion.toDate() });
                                                     }}
                                                     format="DD/MM/YYYY"
+                                                    renderInput={(params) => <TextField {...params} fullWidth />}
                                                 />
-                                            </div> : <p>cargando Fecha</p>
-                                            }
+                                            </div>
                                         </LocalizationProvider>
                                     </div>
-
                                     <TextField
                                         required
                                         id="outlined-controlled"
@@ -1245,7 +1124,7 @@ const CallForm = () => {
                                         <div style={{ display: "flex", alignItems: "center", justifyContent: "start", width: "50%" }}>
                                             <div style={{ display: "flex", alignItems: "center", justifyContent: "start", width: "30%" }}>
                                                 {/* <Checkbox {...label} onClick={() => { setVerRectorEncargado(!verRectorEncargado) }} /> */}
-                                                <Checkbox {...label} onClick={() => { handleActivarEncargoRector() }} />
+                                                <Checkbox checked={verRectorEncargado} {...label} onClick={() => { handleActivarEncargoRector() }} />
                                                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                                                     Encargado
                                                 </Typography>
@@ -1279,7 +1158,7 @@ const CallForm = () => {
                                         <div style={{ display: "flex", alignItems: "center", justifyContent: "start", width: "50%" }}>
                                             <div style={{ display: "flex", alignItems: "center", justifyContent: "start", width: "30%" }}>
                                                 {/* <Checkbox {...label} onClick={() => { setVerVicerectorEncargado(!verVicerectorEncargado) }} /> */}
-                                                <Checkbox {...label} onClick={() => { handleActivarEncargoVicerector() }} />
+                                                <Checkbox checked={verVicerectorEncargado} {...label} onClick={() => { handleActivarEncargoVicerector() }} />
                                                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                                                     Encargado
                                                 </Typography>
@@ -1313,7 +1192,7 @@ const CallForm = () => {
                                         <div style={{ display: "flex", alignItems: "center", justifyContent: "start", width: "50%" }}>
                                             <div style={{ display: "flex", alignItems: "center", justifyContent: "start", width: "30%" }}>
                                                 {/* <Checkbox {...label} onClick={() => { setVerDecanoEncargado(!verDecanoEncargado) }} /> */}
-                                                <Checkbox {...label} onClick={() => { handleActivarEncargoDecano() }} />
+                                                <Checkbox checked={verDecanoEncargado} {...label} onClick={() => { handleActivarEncargoDecano() }} />
                                                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                                                     Encargado
                                                 </Typography>
@@ -1348,4 +1227,4 @@ const CallForm = () => {
     )
 }
 
-export default CallForm
+export default CallFormFinally
